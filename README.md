@@ -22,13 +22,3 @@ npm install
 npm run dev
 # → http://localhost:5173
 ```
-
-## Postman / Thunder Client
-
-Import `backend/stay-sense.postman_collection.json`
-15 requests · 5 folders · all endpoints covered including error cases.
-
-## Staff login (demo)
-
-URL: http://localhost:5173/login
-Username: `staff`  Password: `staySense2026`

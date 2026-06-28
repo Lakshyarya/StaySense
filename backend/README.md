@@ -52,19 +52,4 @@ Interactive API docs: **http://localhost:8000/docs**
 
 Configured in `.env`:
 
-```
 ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
-```
-
-Add additional origins as a comma-separated list.
-
-## Postman collection
-
-Import `stay-sense.postman_collection.json` into Postman or Thunder Client.
-Contains 15 requests across 5 folders covering every endpoint,
-including error cases (400, 404).
-
-## Note on data
-
-All data is in-memory — it resets when the server restarts.
-Database integration (Supabase / PostgreSQL) is wired in Week 5.
