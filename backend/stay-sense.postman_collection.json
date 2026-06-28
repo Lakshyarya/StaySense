@@ -1,0 +1,249 @@
+      {
+  "info": {
+    "name": "Stay Sense API",
+    "_postman_id": "stay-sense-api-v1",
+    "description": "REST API collection for Trishul Eco-Homestays — booking enquiries, reviews, and review analysis.\n\nBase URL: http://localhost:8000\n\nRun the backend first:\n  cd backend && venv/bin/uvicorn main:app --reload",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url",    "value": "http://localhost:8000" },
+    { "key": "enquiry_id",  "value": "TSH-2026-XXXXX" },
+    { "key": "review_id",   "value": "seed-1" }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "GET  /  —  Root health check",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/", "host": ["{{base_url}}"], "path": [""] },
+            "description": "Returns app name and version. Useful to confirm the server is running."
+          }
+        },
+        {
+          "name": "GET  /health  —  Detailed health + counts",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/health", "host": ["{{base_url}}"], "path": ["health"] },
+            "description": "Returns live counts of rooms, enquiries, and reviews in the in-memory store."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Rooms",
+      "item": [
+        {
+          "name": "GET  /api/rooms  —  List all rooms",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/rooms", "host": ["{{base_url}}"], "path": ["api", "rooms"] },
+            "description": "Returns all 3 room types. 200 OK."
+          }
+        },
+        {
+          "name": "GET  /api/rooms?status=available  —  Filter by status",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/rooms?status=available",
+              "host": ["{{base_url}}"],
+              "path": ["api", "rooms"],
+              "query": [{ "key": "status", "value": "available" }]
+            },
+            "description": "Filter rooms by status. Valid values: available | limited | booked."
+          }
+        },
+        {
+          "name": "GET  /api/rooms/:id  —  Get single room",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/rooms/deluxe-hill-view", "host": ["{{base_url}}"], "path": ["api", "rooms", "deluxe-hill-view"] },
+            "description": "Returns one room by ID. Try 'forest-cottage' or 'meadow-room' too."
+          }
+        },
+        {
+          "name": "GET  /api/rooms/:id  —  404 not found",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/rooms/invalid-room", "host": ["{{base_url}}"], "path": ["api", "rooms", "invalid-room"] },
+            "description": "Demonstrates 404 Not Found when room ID does not exist."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Enquiries",
+      "item": [
+        {
+          "name": "POST  /api/enquiries  —  Create enquiry  (201)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/api/enquiries", "host": ["{{base_url}}"], "path": ["api", "enquiries"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"checkIn\":  \"2026-08-15\",\n  \"checkOut\": \"2026-08-18\",\n  \"adults\":   2,\n  \"children\": 1,\n  \"room\":     \"Deluxe Hill View Room\",\n  \"name\":     \"Priya Sharma\",\n  \"phone\":    \"+91 98765 43210\",\n  \"email\":    \"priya@example.com\",\n  \"requests\": \"Vegetarian meals please.\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Creates a booking enquiry. Returns 201 with a generated reference ID (TSH-YYYY-XXXXX).\n\nCopy the returned 'id' into the {{enquiry_id}} collection variable to use in the status-update request."
+          }
+        },
+        {
+          "name": "POST  /api/enquiries  —  400 validation error",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/api/enquiries", "host": ["{{base_url}}"], "path": ["api", "enquiries"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"checkIn\":  \"2026-08-18\",\n  \"checkOut\": \"2026-08-15\",\n  \"adults\":   0,\n  \"name\":     \"\",\n  \"phone\":    \"123\",\n  \"email\":    \"not-an-email\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Demonstrates 400 Validation Error — checkout before checkin, 0 adults, empty name, bad email."
+          }
+        },
+        {
+          "name": "GET  /api/enquiries  —  List all enquiries",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/enquiries", "host": ["{{base_url}}"], "path": ["api", "enquiries"] },
+            "description": "Returns all enquiries newest-first. Create one first with the POST request above."
+          }
+        },
+        {
+          "name": "GET  /api/enquiries?status=pending  —  Filter by status",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/enquiries?status=pending",
+              "host": ["{{base_url}}"],
+              "path": ["api", "enquiries"],
+              "query": [{ "key": "status", "value": "pending" }]
+            },
+            "description": "Filter enquiries by status: pending | contacted | confirmed | declined."
+          }
+        },
+        {
+          "name": "GET  /api/enquiries/:id  —  Get single enquiry",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/enquiries/{{enquiry_id}}", "host": ["{{base_url}}"], "path": ["api", "enquiries", "{{enquiry_id}}"] },
+            "description": "Returns one enquiry by reference ID. Update {{enquiry_id}} variable first."
+          }
+        },
+        {
+          "name": "PATCH  /api/enquiries/:id/status  —  Update status  (200)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/api/enquiries/{{enquiry_id}}/status", "host": ["{{base_url}}"], "path": ["api", "enquiries", "{{enquiry_id}}", "status"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"contacted\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Update the enquiry status. Valid values: pending | contacted | confirmed | declined."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reviews",
+      "item": [
+        {
+          "name": "GET  /api/reviews  —  List all reviews",
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{base_url}}/api/reviews", "host": ["{{base_url}}"], "path": ["api", "reviews"] },
+            "description": "Returns all 6 seed reviews, newest first. 200 OK."
+          }
+        },
+        {
+          "name": "GET  /api/reviews?theme=food  —  Filter by theme",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{base_url}}/api/reviews?theme=food",
+              "host": ["{{base_url}}"],
+              "path": ["api", "reviews"],
+              "query": [{ "key": "theme", "value": "food" }]
+            },
+            "description": "Filter reviews by theme tag. Valid values: food | host | location | cleanliness | value | experience."
+          }
+        },
+        {
+          "name": "POST  /api/reviews  —  Publish a review  (201)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/api/reviews", "host": ["{{base_url}}"], "path": ["api", "reviews"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"guest\":    \"Rohan Mehta\",\n  \"location\": \"Delhi\",\n  \"source\":   \"Google\",\n  \"rating\":   5,\n  \"verified\": true,\n  \"themes\":   [\"experience\", \"host\"],\n  \"text\":     \"One of the best trips of my life. The forest, the food, the family — everything was perfect.\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Publishes a guest review (staff action after classifier). Returns 201 with generated REV-YYYY-XXXXX id."
+          }
+        },
+        {
+          "name": "DELETE  /api/reviews/:id  —  Remove a review  (204)",
+          "request": {
+            "method": "DELETE",
+            "url": { "raw": "{{base_url}}/api/reviews/{{review_id}}", "host": ["{{base_url}}"], "path": ["api", "reviews", "{{review_id}}"] },
+            "description": "Deletes a review by ID. Returns 204 No Content. Default variable targets 'seed-1'."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Analysis",
+      "item": [
+        {
+          "name": "POST  /api/analyse  —  Positive review",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/api/analyse", "host": ["{{base_url}}"], "path": ["api", "analyse"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"The food was absolutely incredible — every meal felt like a celebration. Sunita aunty's Kumaoni dal is something I will dream about. The views from our balcony were breathtaking. Highly recommend to everyone!\",\n  \"source\": \"Google\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Analyses a positive review. Returns sentiment=positive, primary_theme=food, confidence, secondary_themes, suggested_response."
+          }
+        },
+        {
+          "name": "POST  /api/analyse  —  Negative review",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/api/analyse", "host": ["{{base_url}}"], "path": ["api", "analyse"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"Terrible experience. The room was dirty and the staff were rude and unhelpful. Hot water did not work. Worst stay I have had in years.\",\n  \"source\": \"TripAdvisor\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Analyses a negative review. Returns sentiment=negative and an empathetic suggested_response."
+          }
+        },
+        {
+          "name": "POST  /api/analyse  —  400 text too short",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{base_url}}/api/analyse", "host": ["{{base_url}}"], "path": ["api", "analyse"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"ok\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "description": "Demonstrates 400 validation error when review text is shorter than 10 characters."
+          }
+        }
+      ]
+    }
+  ]
+}
