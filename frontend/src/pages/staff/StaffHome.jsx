@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { Star, MessageSquare, Eye, TrendingUp } from 'lucide-react'
+import { Star, CheckCircle2, Eye, TrendingUp } from 'lucide-react'
 import StaffLayout from '../../components/staff/StaffLayout'
 
 function StatCard({ icon: Icon, label, value, sub, accent }) {
@@ -46,9 +46,9 @@ export default function StaffHome() {
     } catch { return { reviews: [], enquiries: [] } }
   }, [])
 
-  const publicCount    = reviews.length
-  const pendingReplies = reviews.filter(r => !r.replied).length
-  const avgRating      = reviews.length
+  const publicCount   = reviews.length
+  const verifiedCount = reviews.filter(r => r.verified).length
+  const avgRating     = reviews.length
     ? (reviews.reduce((s, r) => s + (r.rating ?? 5), 0) / reviews.length).toFixed(1)
     : '4.9'
 
@@ -68,9 +68,9 @@ export default function StaffHome() {
 
         {/* Stat cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <StatCard icon={Star}          label="Avg rating"     value={avgRating}      sub="from all reviews"   accent="bg-amber-50 dark:bg-amber-900/20 text-amber-500" />
-          <StatCard icon={MessageSquare} label="Pending replies" value={pendingReplies} sub="reviews waiting"    accent="bg-red-50 dark:bg-red-900/20 text-red-500" />
-          <StatCard icon={Eye}           label="Public reviews"  value={publicCount}    sub="on reviews page"    accent="bg-primary-50 dark:bg-cyan/10 text-primary-500 dark:text-cyan" />
+          <StatCard icon={Star}          label="Avg rating"      value={avgRating}       sub="from all reviews"  accent="bg-amber-50 dark:bg-amber-900/20 text-amber-500" />
+          <StatCard icon={CheckCircle2}  label="Verified reviews" value={verifiedCount}   sub="confirmed guests"  accent="bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500" />
+          <StatCard icon={Eye}           label="Public reviews"  value={publicCount}     sub="on reviews page"   accent="bg-primary-50 dark:bg-cyan/10 text-primary-500 dark:text-cyan" />
           <StatCard icon={TrendingUp}    label="Total reviews"   value={publicCount + 6} sub="all time"          accent="bg-violet-50 dark:bg-violet-900/20 text-violet-500" />
         </div>
 

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Plus, Pencil, Trash2, X, ChevronLeft, ChevronRight, Image, AlertTriangle } from 'lucide-react'
 import StaffLayout from '../../components/staff/StaffLayout'
-import { Button, Input, toast } from '../../components/ui'
+import { Button, Input, ImageUploader, toast } from '../../components/ui'
 import { DEFAULT_ROOMS } from '../Home'
 
 const ROOMS_KEY = 'stay-sense-rooms'
@@ -9,7 +9,7 @@ const ROOMS_KEY = 'stay-sense-rooms'
 const BLANK_FORM = {
   title: '', description: '', price: '', capacity_adults: '2',
   capacity_children: '0', bed_config: '', status: 'available',
-  amenities: '', images: ['', '', '', '', ''],
+  amenities: '', images: [],
 }
 
 /* Load rooms from localStorage, seed with defaults on first run */
@@ -81,7 +81,7 @@ function RoomModal({ isOpen, onClose, onSave, editRoom }) {
         bed_config:       editRoom.bedConfig ?? editRoom.bed_config ?? '',
         status:           editRoom.status ?? 'available',
         amenities:        (editRoom.amenities ?? []).join(', '),
-        images:           [...(editRoom.images ?? [editRoom.image ?? '']).slice(0, 5), '', '', '', '', ''].slice(0, 5),
+        images:           (editRoom.images ?? (editRoom.image ? [editRoom.image] : [])).slice(0, 5),
       })
     } else {
       setForm(BLANK_FORM)
@@ -104,10 +104,6 @@ function RoomModal({ isOpen, onClose, onSave, editRoom }) {
     setForm(f => ({ ...f, [field]: e.target.value }))
     if (errors[field]) setErrors(er => ({ ...er, [field]: '' }))
   }
-  const setImg = idx => e => {
-    const imgs = [...form.images]; imgs[idx] = e.target.value
-    setForm(f => ({ ...f, images: imgs }))
-  }
 
   const validate = () => {
     const e = {}
@@ -116,6 +112,10 @@ function RoomModal({ isOpen, onClose, onSave, editRoom }) {
     if (!form.price || isNaN(Number(form.price)) || Number(form.price) <= 0)
       e.price = 'Enter a valid price per night.'
     if (!form.bed_config.trim()) e.bed_config = 'Bed configuration is required.'
+    if (!form.images || form.images.length < 1)
+      e.images = 'At least 1 photo is required.'
+    if (form.images && form.images.length > 5)
+      e.images = 'Maximum 5 photos allowed.'
     return e
   }
 
@@ -137,8 +137,8 @@ function RoomModal({ isOpen, onClose, onSave, editRoom }) {
       bedConfig:        form.bed_config.trim(),
       status:           form.status,
       amenities:        form.amenities.split(',').map(a => a.trim()).filter(Boolean),
-      images:           form.images.filter(Boolean),
-      image:            form.images.find(Boolean) ?? '',
+      images:           form.images,
+      image:            form.images[0] ?? '',
     }
     onSave(room)
   }
@@ -152,7 +152,7 @@ function RoomModal({ isOpen, onClose, onSave, editRoom }) {
                    rounded-t-2xl sm:rounded-2xl shadow-2xl
                    max-h-[92vh] flex flex-col animate-slide-up">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 dark:border-void-border flex-shrink-0">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-gray-100 dark:border-void-border flex-shrink-0">
           <h2 className="font-display font-semibold text-lg text-gray-900 dark:text-white">
             {editRoom ? 'Edit Room' : 'Add New Room'}
           </h2>
@@ -164,7 +164,7 @@ function RoomModal({ isOpen, onClose, onSave, editRoom }) {
         </div>
 
         {/* Scrollable body */}
-        <div className="flex-1 overflow-y-auto overscroll-contain px-6 py-5 space-y-4">
+        <div className="flex-1 overflow-y-auto overscroll-contain px-4 sm:px-6 py-5 space-y-4">
           <Input label="Room Name" value={form.title} onChange={set('title')} error={errors.title}
             placeholder="e.g. Deluxe Hill View Room" required />
 
@@ -191,7 +191,7 @@ function RoomModal({ isOpen, onClose, onSave, editRoom }) {
               error={errors.bed_config} placeholder="1 King Bed" required />
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
             <Input label="Max Adults"   type="number" value={form.capacity_adults}   onChange={set('capacity_adults')}   min="1" />
             <Input label="Max Children" type="number" value={form.capacity_children} onChange={set('capacity_children')} min="0" />
             <div>
@@ -202,7 +202,6 @@ function RoomModal({ isOpen, onClose, onSave, editRoom }) {
                            px-3 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500/25">
                 <option value="available">Available</option>
                 <option value="limited">Limited</option>
-                <option value="booked">Booked</option>
               </select>
             </div>
           </div>
@@ -210,41 +209,23 @@ function RoomModal({ isOpen, onClose, onSave, editRoom }) {
           <Input label="Amenities (comma-separated)" value={form.amenities} onChange={set('amenities')}
             placeholder="Hill View, Hot Water, Attached Bath, Balcony" />
 
-          {/* Photo URLs */}
+          {/* Photos — drag & drop or browse */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Photo URLs <span className="text-gray-400 font-normal">(up to 5 — paste Unsplash or any direct image URL)</span>
+              Room Photos <span className="text-gray-400 font-normal">(1–5 photos)</span>
             </label>
-            <div className="space-y-2">
-              {form.images.map((url, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <span className="text-xs text-gray-400 dark:text-void-muted w-4 flex-shrink-0">{i + 1}</span>
-                  <input
-                    type="url"
-                    value={url}
-                    onChange={setImg(i)}
-                    placeholder={`Photo ${i + 1} URL`}
-                    className="flex-1 rounded-xl border border-gray-200 dark:border-void-border
-                               bg-white dark:bg-void-card text-gray-900 dark:text-white text-sm
-                               px-3 py-2.5 placeholder:text-gray-400 dark:placeholder:text-gray-600
-                               focus:outline-none focus:ring-2 focus:ring-primary-500/20 focus:border-primary-400
-                               transition-all duration-200"
-                  />
-                  {url && (
-                    <img src={url} alt="" className="w-8 h-8 rounded-lg object-cover flex-shrink-0 border border-gray-200 dark:border-void-border"
-                      onError={e => { e.target.style.display = 'none' }} />
-                  )}
-                </div>
-              ))}
-            </div>
-            <p className="text-[11px] text-gray-400 dark:text-void-muted mt-2">
-              Tip: Right-click any image online → "Copy image address" and paste here.
-            </p>
+            <ImageUploader
+              images={form.images}
+              onChange={imgs => setForm(f => ({ ...f, images: imgs }))}
+              min={1}
+              max={5}
+            />
+            {errors.images && <p className="text-xs text-red-500 mt-1.5">{errors.images}</p>}
           </div>
         </div>
 
         {/* Footer */}
-        <div className="flex items-center gap-3 px-6 py-4 border-t border-gray-100 dark:border-void-border flex-shrink-0">
+        <div className="flex items-center gap-3 px-4 sm:px-6 py-4 border-t border-gray-100 dark:border-void-border flex-shrink-0">
           <Button variant="primary" fullWidth onClick={handleSave} className="!rounded-xl">
             {editRoom ? 'Save Changes' : 'Publish Room'}
           </Button>

@@ -202,7 +202,7 @@ function RoomModal({ room, onClose, onBook }) {
             <div className="flex gap-3 pt-1">
               <Button variant="primary" fullWidth
                 disabled={room.status === 'booked'}
-                onClick={() => { onClose(); onBook() }}
+                onClick={() => { onClose(); onBook(room) }}
                 className="!rounded-xl">
                 {room.status === 'booked' ? 'Unavailable' : 'Book This Room'}
               </Button>
@@ -328,7 +328,7 @@ export default function Home() {
       <RoomModal
         room={modalRoom}
         onClose={() => setModalRoom(null)}
-        onBook={() => navigate('/enquiry')}
+        onBook={(room) => navigate('/enquiry', { state: { preselectedRoom: room.title ?? room.name } })}
       />
 
       <Footer />

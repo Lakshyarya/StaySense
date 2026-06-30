@@ -130,6 +130,7 @@ export default function StaffDashboard() {
   const [inputText,  setInputText]  = useState('')
   const [source,     setSource]     = useState('')
   const [results,    setResults]    = useState([])
+  const [insights,   setInsights]   = useState(null)
   const [processing, setProcessing] = useState(false)
   const [progress,   setProgress]   = useState({ done: 0, total: 0 })
   const textareaRef = useRef(null)
@@ -144,9 +145,38 @@ export default function StaffDashboard() {
     if (!reviews.length)   { toast.error('No valid reviews detected (min 10 characters).'); return }
     if (reviews.length > 50) { toast.error('Maximum 50 reviews per batch.'); return }
 
-    setResults([]); setProcessing(true); setProgress({ done: 0, total: reviews.length })
-    const collected = []
+    setResults([]); setInsights(null); setProcessing(true)
+    setProgress({ done: 0, total: reviews.length })
 
+    /* ── Batch mode: single API call, gets LLM-generated insights ── */
+    if (mode === 'batch') {
+      try {
+        const payload = reviews.map(text => ({ text, source: source || null }))
+        const res = await analysisApi.analyseBatch(payload)
+        setResults(res.results.map(r => ({ ...r, source })))
+        setInsights({
+          summary:      res.summary,
+          insights:     res.insights,
+          top_praise:   res.top_praise,
+          top_concern:  res.top_concern,
+          breakdown:    res.sentiment_breakdown,
+          top_themes:   res.top_themes,
+          llm_used:     res.llm_used,
+        })
+        setProgress({ done: reviews.length, total: reviews.length })
+        const failed = res.failed || 0
+        if (!failed) toast.success(`${reviews.length} reviews analysed with ${res.llm_used ? 'AI' : 'keyword'} engine.`)
+        else toast.info(`${reviews.length - failed} analysed, ${failed} failed.`)
+      } catch (err) {
+        toast.error(err.message || 'Batch analysis failed.')
+      } finally {
+        setProcessing(false)
+      }
+      return
+    }
+
+    /* ── Single mode: one review, one call ── */
+    const collected = []
     for (let i = 0; i < reviews.length; i++) {
       try {
         const result = await analysisApi.analyse(reviews[i], source || null)
@@ -218,7 +248,7 @@ export default function StaffDashboard() {
               {/* Mode toggle */}
               <div className="flex rounded-xl bg-gray-100 dark:bg-void-card p-1 mb-4 gap-1">
                 {['single','batch'].map(m => (
-                  <button key={m} onClick={() => { setMode(m); setInputText(''); setResults([]) }}
+                  <button key={m} onClick={() => { setMode(m); setInputText(''); setResults([]); setInsights(null) }}
                     className={`flex-1 py-2 text-xs font-semibold rounded-lg capitalize transition-all
                                 ${mode === m
                                   ? 'bg-white dark:bg-void-surface text-gray-900 dark:text-white shadow-sm'
@@ -277,7 +307,7 @@ export default function StaffDashboard() {
                   </button>
                 ))}
                 {inputText && (
-                  <button onClick={() => { setInputText(''); setResults([]) }}
+                  <button onClick={() => { setInputText(''); setResults([]); setInsights(null) }}
                     className="text-[11px] px-2 py-0.5 rounded-full bg-red-50 dark:bg-red-900/20 text-red-400 ml-auto">
                     Clear
                   </button>
@@ -343,6 +373,50 @@ export default function StaffDashboard() {
               </div>
             )}
 
+            {/* AI Insights — batch mode only, from /api/analyse/batch */}
+            {insights && !processing && (
+              <div className="bg-gradient-to-br from-primary-500 to-primary-700
+                              dark:from-cyan/20 dark:to-primary-900/40
+                              dark:border dark:border-cyan/20
+                              rounded-2xl p-5 text-white dark:text-white">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-display font-semibold text-base flex items-center gap-2">
+                    <Sparkles className="w-4 h-4" />
+                    AI Insights
+                  </h3>
+                  <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full
+                                   bg-white/20 dark:bg-cyan/20">
+                    {insights.llm_used ? 'Claude AI' : 'Keyword Engine'}
+                  </span>
+                </div>
+                <p className="text-sm text-white/90 dark:text-gray-200 leading-relaxed mb-4">
+                  {insights.summary}
+                </p>
+                {insights.insights?.length > 0 && (
+                  <ul className="space-y-1.5 mb-4">
+                    {insights.insights.map((ins, i) => (
+                      <li key={i} className="text-xs text-white/80 dark:text-gray-300 flex items-start gap-2">
+                        <span className="w-1 h-1 rounded-full bg-white/60 dark:bg-cyan mt-1.5 flex-shrink-0" />
+                        {ins}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <div className="flex flex-wrap gap-3 text-xs">
+                  {insights.top_praise && insights.top_praise !== 'N/A' && (
+                    <span className="bg-white/15 dark:bg-emerald-900/30 px-3 py-1 rounded-full">
+                      Top praise: {THEME_LABELS[insights.top_praise] ?? insights.top_praise}
+                    </span>
+                  )}
+                  {insights.top_concern && insights.top_concern !== 'None' && insights.top_concern !== 'N/A' && (
+                    <span className="bg-white/15 dark:bg-red-900/30 px-3 py-1 rounded-full">
+                      Top concern: {THEME_LABELS[insights.top_concern] ?? insights.top_concern}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+
             {/* Summary bar */}
             {results.length > 0 && (
               <div className="bg-white dark:bg-void-surface rounded-2xl border border-gray-100 dark:border-void-border p-4">
@@ -359,7 +433,7 @@ export default function StaffDashboard() {
                       </span>
                     ))}
                   </div>
-                  <button onClick={() => { setResults([]); setInputText('') }}
+                  <button onClick={() => { setResults([]); setInputText(''); setInsights(null) }}
                     className="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 flex items-center gap-1">
                     <RefreshCw className="w-3 h-3" /> Reset
                   </button>

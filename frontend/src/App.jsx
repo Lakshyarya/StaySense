@@ -10,6 +10,7 @@ import Enquiry       from './pages/Enquiry'
 import Login         from './pages/Login'
 import StaffHome     from './pages/staff/StaffHome'
 import StaffAccommodation from './pages/staff/StaffAccommodation'
+import StaffReviews  from './pages/staff/StaffReviews'
 import StaffDashboard from './pages/StaffDashboard'
 
 /* Wrap any staff route — redirects to /login if not authenticated */
@@ -34,7 +35,7 @@ export default function App() {
         {/* Staff — protected */}
         <Route path="/staff/dashboard"     element={<ProtectedRoute><StaffHome /></ProtectedRoute>} />
         <Route path="/staff/classifier"    element={<ProtectedRoute><StaffDashboard /></ProtectedRoute>} />
-        <Route path="/staff/reviews"       element={<ProtectedRoute><StaffDashboard /></ProtectedRoute>} />
+        <Route path="/staff/reviews"       element={<ProtectedRoute><StaffReviews /></ProtectedRoute>} />
         <Route path="/staff/accommodation" element={<ProtectedRoute><StaffAccommodation /></ProtectedRoute>} />
 
         {/* Catch-all */}

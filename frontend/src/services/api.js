@@ -128,4 +128,16 @@ export const analysisApi = {
       method: 'POST',
       body: JSON.stringify({ text, source: source || null }),
     }),
+
+  /**
+   * POST /api/analyse/batch
+   * @param {Array<{text:string, source?:string}>} reviews
+   * @returns {{ results, total, failed, sentiment_breakdown, top_themes,
+   *             summary, insights, top_praise, top_concern, llm_used }}
+   */
+  analyseBatch: (reviews) =>
+    request('/api/analyse/batch', {
+      method: 'POST',
+      body: JSON.stringify({ reviews }),
+    }),
 }

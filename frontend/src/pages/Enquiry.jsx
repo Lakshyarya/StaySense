@@ -1,11 +1,11 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useLocation } from 'react-router-dom'
 import { CheckCircle2, ChevronRight, MessageCircle, CalendarCheck } from 'lucide-react'
 import Navbar from '../components/Navbar'
 import Footer from '../components/Footer'
 import { Button, Input, toast } from '../components/ui'
 import { enquiriesApi } from '../services/api'
-
-const ROOMS = ['Deluxe Hill View Room', 'Forest Cottage', 'Meadow Room']
+import { DEFAULT_ROOMS } from './Home'
 
 const INIT = {
   checkIn: '', checkOut: '',
@@ -14,12 +14,41 @@ const INIT = {
   requests: '', terms: false,
 }
 
+/* Load room names — staff-managed list if present, else defaults */
+function loadRoomNames() {
+  try {
+    const stored = localStorage.getItem('stay-sense-rooms')
+    const parsed = stored ? JSON.parse(stored) : null
+    const rooms  = parsed && parsed.length ? parsed : DEFAULT_ROOMS
+    return rooms.map(r => r.title ?? r.name)
+  } catch {
+    return DEFAULT_ROOMS.map(r => r.title)
+  }
+}
+
 export default function Enquiry() {
-  const [form,      setForm]      = useState(INIT)
+  const location = useLocation()
+  const preselectedRoom = location.state?.preselectedRoom
+
+  const [roomOptions, setRoomOptions] = useState([])
+  const [form,      setForm]      = useState({ ...INIT, room: preselectedRoom || '' })
   const [errors,    setErrors]    = useState({})
   const [loading,   setLoading]   = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [bookingRef, setBookingRef] = useState('')
+
+  /* Load room list on mount; re-apply preselection if it arrived after mount */
+  useEffect(() => {
+    setRoomOptions(loadRoomNames())
+  }, [])
+
+  useEffect(() => {
+    if (preselectedRoom) {
+      setForm(f => ({ ...f, room: preselectedRoom }))
+      toast.success(`${preselectedRoom} selected for your enquiry.`)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [preselectedRoom])
 
   const set = field => e => {
     const val = e.target.type === 'checkbox' ? e.target.checked : e.target.value
@@ -41,7 +70,6 @@ export default function Enquiry() {
     return e
   }
 
-  /* WhatsApp — stays client-side, no backend needed */
   const handleWhatsApp = () => {
     const errs = validate()
     if (Object.keys(errs).length) { setErrors(errs); return }
@@ -54,11 +82,10 @@ export default function Enquiry() {
       (form.requests ? `${form.requests}\n\n` : '') +
       `_Sent via Stay Sense Direct Booking_`
     )
-    window.open(`https://wa.me/8002042546?text=${msg}`, '_blank')
+    window.open(`https://wa.me/918002042546?text=${msg}`, '_blank')
     toast.success('Opening WhatsApp with your inquiry details.')
   }
 
-  /* Form submit — real API call */
   const handleSubmit = async () => {
     const errs = validate()
     if (Object.keys(errs).length) { setErrors(errs); return }
@@ -89,27 +116,27 @@ export default function Enquiry() {
   /* ── Success screen ── */
   if (submitted) {
     return (
-      <div className="min-h-screen bg-mist dark:bg-forest-dark flex flex-col">
+      <div className="min-h-screen bg-mist dark:bg-void flex flex-col">
         <Navbar />
         <main className="flex-1 flex items-center justify-center px-4 py-24">
           <div className="max-w-md w-full text-center">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full
-                            bg-primary-50 dark:bg-primary-900/30 mb-6">
-              <CalendarCheck className="w-8 h-8 text-primary-500 dark:text-sage" />
+                            bg-primary-50 dark:bg-cyan/10 mb-6">
+              <CalendarCheck className="w-8 h-8 text-primary-500 dark:text-cyan" />
             </div>
-            <h1 className="font-display font-bold text-3xl text-gray-900 dark:text-white mb-3">
+            <h1 className="font-display font-bold text-2xl sm:text-3xl text-gray-900 dark:text-white mb-3">
               Enquiry received!
             </h1>
-            <p className="text-gray-500 dark:text-gray-400 text-sm leading-relaxed mb-6">
+            <p className="text-gray-500 dark:text-void-muted text-sm leading-relaxed mb-6">
               Thank you. Prerna will confirm availability and respond via WhatsApp
               within 2 hours.
             </p>
-            <div className="bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800
+            <div className="bg-white dark:bg-void-surface border border-gray-100 dark:border-void-border
                             rounded-2xl p-5 mb-8">
-              <p className="text-xs text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">
+              <p className="text-xs text-gray-400 dark:text-void-muted uppercase tracking-wider mb-1">
                 Your reference number
               </p>
-              <p className="font-display font-bold text-2xl text-primary-600 dark:text-sage tracking-wider">
+              <p className="font-display font-bold text-xl sm:text-2xl text-primary-600 dark:text-cyan tracking-wider break-all">
                 {bookingRef}
               </p>
             </div>
@@ -124,26 +151,27 @@ export default function Enquiry() {
   }
 
   return (
-    <div className="min-h-screen bg-mist dark:bg-forest-dark flex flex-col">
+    <div className="min-h-screen bg-mist dark:bg-void flex flex-col">
       <Navbar />
 
-      <main className="flex-1 pt-28 pb-16">
+      <main className="flex-1 pt-24 sm:pt-28 pb-12 sm:pb-16">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-10 items-start">
 
-            {/* Left: info */}
-            <section>
-              <p className="text-teak text-xs font-semibold uppercase tracking-widest mb-4">
+            {/* Left: info — collapses above form on mobile */}
+            <section className="order-1">
+              <p className="text-teak text-xs font-semibold uppercase tracking-widest mb-3 sm:mb-4">
                 Direct Booking Enquiry
               </p>
-              <h1 className="font-display text-4xl sm:text-5xl font-bold text-gray-900 dark:text-white leading-tight mb-6">
+              <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-bold
+                             text-gray-900 dark:text-white leading-tight mb-4 sm:mb-6">
                 Check availability<br />with the family.
               </h1>
-              <p className="text-gray-500 dark:text-gray-400 text-base leading-relaxed mb-8">
+              <p className="text-gray-500 dark:text-void-muted text-sm sm:text-base leading-relaxed mb-6 sm:mb-8">
                 Send your preferred dates and room choice. This is an enquiry, not a
                 payment page — the host will confirm availability directly.
               </p>
-              <ul className="space-y-3">
+              <ul className="space-y-2.5 sm:space-y-3">
                 {[
                   'No payment required to send an enquiry',
                   'Personalised room recommendation on request',
@@ -151,7 +179,7 @@ export default function Enquiry() {
                   'Direct rate — no OTA commission',
                 ].map(item => (
                   <li key={item} className="flex items-start gap-3 text-gray-600 dark:text-gray-300 text-sm">
-                    <CheckCircle2 className="w-4 h-4 text-primary-500 dark:text-sage flex-shrink-0 mt-0.5" />
+                    <CheckCircle2 className="w-4 h-4 text-primary-500 dark:text-cyan flex-shrink-0 mt-0.5" />
                     {item}
                   </li>
                 ))}
@@ -159,15 +187,15 @@ export default function Enquiry() {
             </section>
 
             {/* Right: form */}
-            <section className="bg-white dark:bg-gray-900 rounded-2xl p-6 sm:p-8
-                                border border-gray-100 dark:border-gray-800
+            <section className="order-2 bg-white dark:bg-void-surface rounded-2xl p-5 sm:p-8
+                                border border-gray-100 dark:border-void-border
                                 shadow-xl shadow-gray-900/5">
-              <h2 className="font-display font-semibold text-xl text-gray-900 dark:text-white mb-6">
+              <h2 className="font-display font-semibold text-lg sm:text-xl text-gray-900 dark:text-white mb-5 sm:mb-6">
                 Enquiry Form
               </h2>
 
               <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Input label="Check-in"  type="date" value={form.checkIn}  onChange={set('checkIn')}  error={errors.checkIn}  required />
                   <Input label="Check-out" type="date" value={form.checkOut} onChange={set('checkOut')} error={errors.checkOut} required />
                 </div>
@@ -184,19 +212,24 @@ export default function Enquiry() {
                   <select
                     value={form.room}
                     onChange={set('room')}
-                    className="w-full rounded-xl border border-gray-200 dark:border-gray-700
-                               bg-white dark:bg-gray-900 text-gray-900 dark:text-white
+                    className="w-full rounded-xl border border-gray-200 dark:border-void-border
+                               bg-white dark:bg-void-card text-gray-900 dark:text-white
                                px-4 py-3 text-sm
                                focus:outline-none focus:ring-2 focus:ring-primary-500/25 focus:border-primary-400"
                   >
                     <option value="">No preference</option>
-                    {ROOMS.map(r => <option key={r} value={r}>{r}</option>)}
+                    {roomOptions.map(r => <option key={r} value={r}>{r}</option>)}
                   </select>
+                  {preselectedRoom && form.room === preselectedRoom && (
+                    <p className="text-[11px] text-primary-500 dark:text-cyan mt-1.5 flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3" /> Pre-selected from room details
+                    </p>
+                  )}
                 </div>
 
-                <Input label="Full Name" placeholder="Priya Sharma"        value={form.name}  onChange={set('name')}  error={errors.name}  required />
+                <Input label="Full Name" placeholder="Priya Sharma" value={form.name} onChange={set('name')} error={errors.name} required />
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <Input label="Phone" type="tel"   placeholder="+91 98765 43210" value={form.phone} onChange={set('phone')} error={errors.phone} required />
                   <Input label="Email" type="email" placeholder="you@email.com"   value={form.email} onChange={set('email')} error={errors.email} required />
                 </div>
@@ -211,8 +244,8 @@ export default function Enquiry() {
                     placeholder="Dietary requirements, accessibility needs, anniversary surprises..."
                     rows={3}
                     maxLength={500}
-                    className="w-full rounded-xl border border-gray-200 dark:border-gray-700
-                               bg-white dark:bg-gray-900 text-gray-900 dark:text-white
+                    className="w-full rounded-xl border border-gray-200 dark:border-void-border
+                               bg-white dark:bg-void-card text-gray-900 dark:text-white
                                px-4 py-3 text-sm resize-none
                                placeholder:text-gray-400 dark:placeholder:text-gray-500
                                focus:outline-none focus:ring-2 focus:ring-primary-500/25 focus:border-primary-400"
@@ -226,9 +259,9 @@ export default function Enquiry() {
                     checked={form.terms}
                     onChange={set('terms')}
                     className="mt-0.5 w-4 h-4 rounded text-primary-500 border-gray-300
-                               dark:border-gray-600 focus:ring-primary-500/30 cursor-pointer flex-shrink-0"
+                               dark:border-void-border focus:ring-primary-500/30 cursor-pointer flex-shrink-0"
                   />
-                  <span className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed">
+                  <span className="text-xs text-gray-500 dark:text-void-muted leading-relaxed">
                     I understand this is an enquiry, not a confirmed booking. No payment is required now.
                   </span>
                 </label>

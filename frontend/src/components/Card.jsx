@@ -223,7 +223,7 @@ export default function Card({
           aria-label={`${ctaLabel} — ${title}`}
           className="w-full flex items-center justify-center gap-1.5 text-sm font-semibold
                      text-primary-600 dark:text-sage
-                     hover:text-primary-700 dark:hover:text-green-300
+                     hover:text-primary-700 dark:hover:text-cyan
                      disabled:text-gray-300 dark:disabled:text-gray-600
                      disabled:cursor-not-allowed
                      transition-colors duration-200 group/cta py-1"

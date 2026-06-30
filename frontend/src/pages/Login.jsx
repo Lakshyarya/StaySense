@@ -34,8 +34,10 @@ export default function Login() {
       toast.success('Welcome back!')
       navigate('/staff/dashboard', { replace: true })
     } else {
-      toast.error(result.error)
-      setErrors({ password: result.error })
+      /* Generic message — never reveal which field was wrong */
+      const GENERIC_ERROR = 'Invalid username or password.'
+      toast.error(GENERIC_ERROR)
+      setErrors({ username: ' ', password: GENERIC_ERROR })
     }
   }
 
@@ -136,12 +138,6 @@ export default function Login() {
                 </button>
               </div>
               {errors.password && <p className="text-xs text-red-500 mt-1.5">{errors.password}</p>}
-            </div>
-
-            {/* Demo hint */}
-            <div className="text-xs text-gray-400 dark:text-void-muted bg-gray-50 dark:bg-void-card
-                            rounded-xl px-4 py-3 border border-gray-100 dark:border-void-border">
-              Demo: <code className="text-primary-500 dark:text-cyan">staff</code> / <code className="text-primary-500 dark:text-cyan">staySense2026</code>
             </div>
 
             <Button type="submit" variant="primary" fullWidth loading={loading} className="!rounded-xl !py-3 mt-2">
